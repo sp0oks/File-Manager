@@ -1,9 +1,6 @@
 # Compilador
 CC = gcc
 
-# Flags de versao
-C_VERSION = -std=c11
-
 # Arquivo principal
 OBJ_FILE = main.c
 
@@ -17,7 +14,7 @@ CC_FLAGS = -g -Wall
 OUT_FILE = ./archiver
 
 all:
-	$(CC) $(C_VERSION) $(OBJ_FILE) $(AUX_FILES) $(CC_FLAGS) -o $(OUT_FILE)
+	$(CC) $(OBJ_FILE) $(AUX_FILES) $(CC_FLAGS) -o $(OUT_FILE)
 
 clean:
 	rm $(OUT_FILE)

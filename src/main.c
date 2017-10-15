@@ -1,9 +1,4 @@
-/**/
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "register.h"
 
 void printhelp();
@@ -16,10 +11,6 @@ int main(int argc, char* argv[]){
     char *rarg = NULL; // Remove argument
     char *iarg = NULL; // Insert argument
     char *filepath = NULL; // File path argument
-
-    // Insertion related
-    unsigned int regnum; // Number of register to insert
-    reg regin; // Array of registers to insert
 
     int index;
     int exitcode = 0;
@@ -50,11 +41,12 @@ int main(int argc, char* argv[]){
             exitcode = 1;
         }
         else
-            printf("Created file successfully\n");
+            printf("Created file \"%s\" successfully.\n",filepath);
     }
 
     // 2. Search register
     if(flags[1] == 1){
+        reg regin;
         if(!searchreg(&regin, sarg, filepath)){
             printf("Search on %s failed\n", filepath);
             exitcode = 1;
@@ -69,10 +61,17 @@ int main(int argc, char* argv[]){
 
     // 4. Insert registers
     if(flags[3] == 1){
-        regnum = (iarg == NULL) ? 1 : (atoi(iarg) == 0) ? 1 : atoi(iarg);
-        for(index = 0; index < regnum; index++){
-            readreg(&regin);
-            insertreg(regin, filepath);
+        int regnum = (iarg == NULL) ? 0 : atoi(iarg);
+        if (regnum <= 0){
+          printf("\n\nInvalid option: cannot add %d registers to file.\n\n", atoi(iarg));
+          exitcode = 1;
+        }
+        else{
+          reg regin[regnum];
+          for(index = 0; index < regnum; index++){
+              readreg(&regin[index]);
+              insertreg(regin[index], filepath);
+            }
         }
     }
 
@@ -85,12 +84,6 @@ int main(int argc, char* argv[]){
         listreg(filepath);
 
     // Free all the argument strings that were allocated
-    if(sarg)
-      free(sarg);
-    if(rarg)
-      free(rarg);
-    if(iarg)
-      free(iarg);
     if(filepath)
       free(filepath);
 
@@ -98,7 +91,7 @@ int main(int argc, char* argv[]){
 }
 
 void printhelp(){
-    printf("\tusage: archiver [options] <file_path>\n");
+    printf("\n\n\tusage: archiver [options] <file_path>\n");
     printf("\toptions:\n");
     printf("\t\t-n\t\t\tCreates a new file\n");
     printf("\t\t-i <reg_number>\t\tInserts <reg_number> registers into file\n");
@@ -113,25 +106,26 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
 
     // Reads all the options from command line
     // The options set flags to 1, and if an argument is needed, it's passed to a char pointers
-    while((opt = getopt(argc, argv, "nclr:s:i::")) != -1){
+    while((opt = getopt(argc, argv, "nclr:s:i:")) != -1){
         switch(opt){
             case 'n':
                 flags[0] = 1;
                 break;
             case 's':
                 flags[1] = 1;
-                *sarg = malloc(strlen(optarg));
-                strcpy(*sarg, optarg);
+                *sarg = optarg;
+                /**sarg = (char*)malloc(strlen(optarg));
+                strcpy(*sarg, optarg);*/
                 break;
             case 'r':
                 flags[2] = 1;
-                *rarg = malloc(strlen(optarg));
-                strcpy(*rarg, optarg);
+                *rarg = optarg;
+                /**rarg = (char*)malloc(strlen(optarg));
+                strcpy(*rarg, optarg);*/
                 break;
             case 'i':
                 flags[3] = 1;
-                *iarg = malloc(strlen(optarg));
-                strcpy(*iarg, optarg);
+                *iarg = optarg;
                 break;
             case 'c':
                 flags[4] = 1;
@@ -145,10 +139,11 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
     // Checks for the required filepath
     // Only reads the first value from argv
     if(optind < argc){
-        *filepath = malloc(strlen(argv[optind]));
+        *filepath = (char*)malloc(strlen(argv[optind]));
         strcpy(*filepath, argv[optind]);
     }else{
         printhelp();
+        printf("\n\nInvalid option: archiver takes exactly one filepath as parameter\n\n");
         return 0;
     }
 
