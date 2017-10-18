@@ -36,7 +36,7 @@ int main(int argc, char* argv[]){
     if(flags[0] == 1){
         // If it's not possible to create the file, quits the program
         if(!createfile(filepath)){
-            printf("Failed to create file %s\n", filepath);
+            printf("Failed to create file \"%s\"\n", filepath);
             return 1;
         }
         else
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]){
         // memset(&regin, 0, sizeof(regin));
         char buffer[128];
         if(!searchreg(&regin, sarg, filepath)){
-            printf("Search on %s failed\n", filepath);
+            printf("Search on \"%s\" failed\n", filepath);
             printf("Search was unable to find any registers related to the term '%s'\n", sarg);
             return 1;
         }
@@ -77,6 +77,7 @@ int main(int argc, char* argv[]){
     // 4. Insert registers
     if(flags[3] == 1){
         int regnum = (iarg == NULL) ? 0 : atoi(iarg);
+        int error;
         if (regnum < 0){
           printf("Invalid option: cannot add %d registers to file.\n", atoi(iarg));
           return 1;
@@ -91,7 +92,7 @@ int main(int argc, char* argv[]){
             reg regin[regnum];
             memset(regin, 'F', sizeof(regin));
             for(index = 0; index < regnum; index++)
-                insertreg(regin[index], filepath);
+              error = insertreg(regin[index], filepath);
           }
           else{
             printf("Operation cancelled.\n");
@@ -102,8 +103,12 @@ int main(int argc, char* argv[]){
           reg regin[regnum];
           for(index = 0; index < regnum; index++){
               readreg(&regin[index]);
-              insertreg(regin[index], filepath);
+              error = insertreg(regin[index], filepath);
             }
+        }
+        if(!error){
+            printf("Failed to insert registers on file \"%s\".\n", filepath);
+            return 1;
         }
     }
 

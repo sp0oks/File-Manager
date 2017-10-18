@@ -62,8 +62,12 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
               fclose(fp);
               return 1;
             }
+            // If still not found, read next block
           }
-          // If still not found, read next block
+          else{
+              printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
+              return 0;
+          }
         }
         fclose(fp);
     }
@@ -108,6 +112,10 @@ int insertreg(reg regin, char* filepath){
               return 1;
             }
             BLKCOUNT++;
+        }
+        else{
+          printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
+          return 0;
         }
       }
       // If read size is null, last block is full and a new one must be made
