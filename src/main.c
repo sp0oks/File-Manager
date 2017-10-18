@@ -13,7 +13,6 @@ int main(int argc, char* argv[]){
     char *filepath = NULL; // File path argument
 
     int index;
-    int exitcode = 0;
     /*
      Checks if there's a file path argument
      If file path argument is missing, print the usage and exit with 1
@@ -29,7 +28,7 @@ int main(int argc, char* argv[]){
     }
 
     if(!readflags(flags, &sarg, &rarg, &iarg, &filepath, argc, argv))
-        exitcode = 1;
+        return 1;
 
     // Now for the operations, it's necessary to maintain the precedence
 
@@ -38,7 +37,7 @@ int main(int argc, char* argv[]){
         // If it's not possible to create the file, quits the program
         if(!createfile(filepath)){
             printf("Failed to create file %s\n", filepath);
-            exitcode = 1;
+            return 1;
         }
         else
             printf("Created file \"%s\" successfully.\n",filepath);
@@ -47,13 +46,28 @@ int main(int argc, char* argv[]){
     // 2. Search register
     if(flags[1] == 1){
         reg regin;
+        // memset(&regin, 0, sizeof(regin));
+        char buffer[128];
         if(!searchreg(&regin, sarg, filepath)){
             printf("Search on %s failed\n", filepath);
             printf("Search was unable to find any registers related to the term '%s'\n", sarg);
-            exitcode = 1;
+            return 1;
         }
-        else
-            printf("[ %s | %s | %s | %s ]", regin.key, regin.title, regin.author, regin.link);
+        else{
+            printf("Register found!\n\n");
+            memset(buffer, 0, sizeof(buffer));
+            strncpy(buffer, regin.key, sizeof(regin.key));
+            printf("Key: %s\n\n", buffer);
+            memset(buffer, 0, sizeof(buffer));
+            strncpy(buffer, regin.title, sizeof(regin.title));
+            printf("Title: %s\n", buffer);
+            memset(buffer, 0, sizeof(buffer));
+            strncpy(buffer, regin.author, sizeof(regin.author));
+            printf("Author: %s\n", buffer);
+            memset(buffer, 0, sizeof(buffer));
+            strncpy(buffer, regin.link, sizeof(regin.link));
+            printf("Download Link: %s\n", buffer);
+        }
     }
 
     // 3. Remove register
@@ -63,9 +77,26 @@ int main(int argc, char* argv[]){
     // 4. Insert registers
     if(flags[3] == 1){
         int regnum = (iarg == NULL) ? 0 : atoi(iarg);
-        if (regnum <= 0){
+        if (regnum < 0){
           printf("Invalid option: cannot add %d registers to file.\n", atoi(iarg));
-          exitcode = 1;
+          return 1;
+        }
+        else if (regnum == 0){
+          char ans;
+          printf("Insert dummy registers into file '%s'? (y/n)\n", filepath);
+          scanf("%c",&ans);
+          if(ans == 'y'){
+            printf("Choose number of dummy registers to add:\n");
+            scanf("%d", &regnum);
+            reg regin[regnum];
+            memset(regin, 'F', sizeof(regin));
+            for(index = 0; index < regnum; index++)
+                insertreg(regin[index], filepath);
+          }
+          else{
+            printf("Operation cancelled.\n");
+            return 1;
+          }
         }
         else{
           reg regin[regnum];
@@ -85,10 +116,10 @@ int main(int argc, char* argv[]){
         listreg(filepath);
 
     // Free all the argument strings that were allocated
-    if(filepath)
-      free(filepath);
+    // if(filepath)
+    //   free(filepath);
 
-    return exitcode;
+    return 0;
 }
 
 void printhelp(){
@@ -96,6 +127,7 @@ void printhelp(){
     printf("Options:\n");
     printf("\t-n\t\t\tCreates a new file\n");
     printf("\t-i <reg_number>\t\tInserts <reg_number> registers into file\n");
+    printf("\t-i 0\t\t\tInserts dummy registers into file\n");
     printf("\t-s <term>\t\tSearches for <term> in all registers in file\n");
     printf("\t-r <reg_key>\t\tRemoves register from file\n");
     printf("\t-c\t\t\tCompact file\n");
@@ -114,9 +146,7 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
                 break;
             case 's':
                 flags[1] = 1;
-                //*sarg = optarg;
-                *sarg = (char*)malloc(strlen(optarg));
-                strcpy(*sarg, optarg);
+                *sarg = optarg;
                 break;
             case 'r':
                 flags[2] = 1;
@@ -140,8 +170,9 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
     // Checks for the required filepath
     // Only reads the first value from argv
     if(optind < argc){
-        *filepath = (char*)malloc(strlen(argv[optind]));
-        strcpy(*filepath, argv[optind]);
+        *filepath = argv[optind];
+        // *filepath = (char*)malloc(strlen(argv[optind]));
+        // strcpy(*filepath, argv[optind]);
     }else{
         printhelp();
         printf("Invalid option: archiver takes exactly one filepath as parameter\n");

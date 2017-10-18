@@ -6,23 +6,64 @@
 
 int searchreg(reg* regout, char* searchstr, char* filepath){
     FILE* fp = fopen(filepath, "rb");
-    char blk_temp[BLKSIZE];
+    char block_temp[BLKSIZE]; // Buffer to store raw blocks
+    char reg_temp[REGSIZE]; // Buffer to store raw registers
+    char buffer[128]; // Buffer to format character arrays into strings
 
     if(!fp)
         return 0;
 
     else{
-        while(fread(blk_temp, BLKSIZE, 1, fp)){
-          // Checks if keys match and if the register is valid
-         /* if(!strncmp(reg_temp, key, 4) && strncmp(reg_temp, "\x7F", 1)){
-              strncpy(regout->key, reg_temp, 4);
-              strncpy(regout->title, reg_temp+4, 30);
-              strncpy(regout->author, reg_temp+34, 21);
-              strncpy(regout->link, reg_temp+55, 30);
+        while(fread(block_temp, BLKSIZE, 1, fp)){
+          // Checks if search term matches any register in the block and if it is valid (not removed)
+          if (!strncmp(block_temp, "#!", 2)){
+            int OFFBLK = 2; // Offset variable to jump between registers
+            int found = 0;
+            while (OFFBLK < BLKSIZE && !found){
+              if (strncmp(block_temp+OFFBLK,"\x7F",1) && strncmp(block_temp+OFFBLK,"\0", 1)){
+                int OFFREG = 0; // Offset variable to jump between register fields
+                // Copy REGSIZE number of bits from temporary block buffer to temporary register buffer
+                memcpy(reg_temp, block_temp+OFFBLK, REGSIZE);
+                // Clear comparing buffer and copy character array into it to test against the search string
+                // Testing key field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->key));
+                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+                OFFREG += sizeof(regout->key);
+                // Testing title field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->title));
+                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+                OFFREG += sizeof(regout->title);
+                // Testing author field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->author));
+                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+                OFFREG += sizeof(regout->author);
+                // Testing link field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->link));
+                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+              }
+              // If not found, move to next register
+              OFFBLK += REGSIZE;
+            }
+            if(found){
+              // If search match is successful, copy register to output
+              int OFFREG = 0;
+              memcpy(regout->key, reg_temp+OFFREG, sizeof(regout->key));
+              OFFREG += sizeof(regout->key);
+              memcpy(regout->title, reg_temp+OFFREG, sizeof(regout->title));
+              OFFREG += sizeof(regout->title);
+              memcpy(regout->author, reg_temp+OFFREG, sizeof(regout->author));
+              OFFREG += sizeof(regout->author);
+              memcpy(regout->link, reg_temp+OFFREG, sizeof(regout->link));
 
               fclose(fp);
               return 1;
-          }*/
+            }
+          }
+          // If still not found, read next block
         }
         fclose(fp);
     }
@@ -31,7 +72,7 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
 
 int insertreg(reg regin, char* filepath){
     FILE* fp = fopen(filepath, "r+b");
-    size_t iterator;
+    size_t iterator; // Iterator to check read line's size
     char block_temp[BLKSIZE];
     int BLKCOUNT = 0; // Offset that will be used to find the block's position
     int offset = 0;
@@ -69,15 +110,15 @@ int insertreg(reg regin, char* filepath){
             BLKCOUNT++;
         }
       }
-
+      // If read size is null, last block is full and a new one must be made
       if(!iterator){
         block* new_blk = newblock();
-
+        // Since it's a new block, copy the input register to the first position
         strncpy(new_blk->reg_index[0].key, regin.key, sizeof(regin.key));
         strncpy(new_blk->reg_index[0].title, regin.title, sizeof(regin.title));
         strncpy(new_blk->reg_index[0].author, regin.author, sizeof(regin.author));
         strncpy(new_blk->reg_index[0].link, regin.link, sizeof(regin.link));
-
+        // Position pointer and write data to file
         fseek(fp, BLKCOUNT*BLKSIZE, SEEK_SET);
         fwrite(new_blk, BLKSIZE, 1, fp);
 
