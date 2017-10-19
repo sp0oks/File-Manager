@@ -46,27 +46,15 @@ int main(int argc, char* argv[]){
     // 2. Search register
     if(flags[1] == 1){
         reg regin;
-        // memset(&regin, 0, sizeof(regin));
-        char buffer[128];
+        memset(&regin, 0, sizeof(regin));
         if(!searchreg(&regin, sarg, filepath)){
             printf("Search on \"%s\" failed\n", filepath);
             printf("Search was unable to find any registers related to the term '%s'\n", sarg);
             return 1;
         }
         else{
-            printf("Register found!\n\n");
-            memset(buffer, 0, sizeof(buffer));
-            strncpy(buffer, regin.key, sizeof(regin.key));
-            printf("Key: %s\n\n", buffer);
-            memset(buffer, 0, sizeof(buffer));
-            strncpy(buffer, regin.title, sizeof(regin.title));
-            printf("Title: %s\n", buffer);
-            memset(buffer, 0, sizeof(buffer));
-            strncpy(buffer, regin.author, sizeof(regin.author));
-            printf("Author: %s\n", buffer);
-            memset(buffer, 0, sizeof(buffer));
-            strncpy(buffer, regin.link, sizeof(regin.link));
-            printf("Download Link: %s\n", buffer);
+            printf("Register found!\n");
+            writereg(regin);
         }
     }
 

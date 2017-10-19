@@ -28,10 +28,12 @@ typedef struct{
 
 // Register related operations
 int searchreg(reg*, char*, char*);
+int teststr(char*, char*, const char*);
 int insertreg(reg, char*);
 int listreg(char*);
 int removereg(char*, char*);
 void readreg(reg*);
+void writereg(reg);
 
 // Block operations
 block* newblock();

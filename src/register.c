@@ -28,22 +28,22 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
                 // Testing key field
                 memset(buffer, 0, sizeof(buffer));
                 memcpy(buffer, reg_temp+OFFREG, sizeof(regout->key));
-                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+                found = (!strncmp(buffer, searchstr, strlen(searchstr))) ? 1 : 0;
                 OFFREG += sizeof(regout->key);
                 // Testing title field
                 memset(buffer, 0, sizeof(buffer));
                 memcpy(buffer, reg_temp+OFFREG, sizeof(regout->title));
-                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+                found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
                 OFFREG += sizeof(regout->title);
                 // Testing author field
                 memset(buffer, 0, sizeof(buffer));
                 memcpy(buffer, reg_temp+OFFREG, sizeof(regout->author));
-                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+                found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
                 OFFREG += sizeof(regout->author);
                 // Testing link field
                 memset(buffer, 0, sizeof(buffer));
                 memcpy(buffer, reg_temp+OFFREG, sizeof(regout->link));
-                if(!strncmp(buffer, searchstr, strlen(searchstr))) found = 1;
+                found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
               }
               // If not found, move to next register
               OFFBLK += REGSIZE;
@@ -66,11 +66,21 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
           }
           else{
               printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
+              fclose(fp);
               return 0;
           }
         }
-        fclose(fp);
     }
+    return 0;
+}
+
+int teststr(char* source, char* searchstr, const char* delim){
+  char* token; // Variable to store string tokens that will be used for testing against search string
+  token = strtok(source, delim);
+  while(token != NULL){
+    if(!strncmp(token, searchstr, strlen(searchstr))) return 1;
+    token = strtok(NULL, delim);
+  }
     return 0;
 }
 
@@ -83,7 +93,6 @@ int insertreg(reg regin, char* filepath){
 
     if(!fp)
       return 0;
-
     else{
       // Checks if there are available slots in the existing blocks
       while((iterator = fread(block_temp, BLKSIZE, 1, fp)) != 0){
@@ -139,7 +148,44 @@ int insertreg(reg regin, char* filepath){
 }
 
 int listreg(char* filepath){
-    return 1;
+    FILE* fp = fopen(filepath, "rb");
+    char block_temp[BLKSIZE];
+    reg regout[BLKSIZE/REGSIZE];
+    memset(regout, 0, sizeof(regout));
+    int empty = 1;
+
+    if(!fp)
+      return 0;
+    else{
+      while((fread(block_temp, BLKSIZE, 1, fp)) != 0){
+        if(!strncmp(block_temp, "#!", 2)){
+          int i;
+          int offset = 2;
+          for(i = 0; i < BLKSIZE/REGSIZE; i++){
+            if(strncmp(block_temp+offset, "\x7F", 1) && strncmp(block_temp+offset, "\0", 1)){
+              empty = 0;
+              strncpy(regout[i].key, block_temp+offset, sizeof(regout[0].key));
+              offset += sizeof(regout[i].key);
+              strncpy(regout[i].title, block_temp+offset, sizeof(regout[0].title));
+              offset += sizeof(regout[i].title);
+              strncpy(regout[i].author, block_temp+offset, sizeof(regout[0].author));
+              offset += sizeof(regout[i].author);
+              strncpy(regout[i].link, block_temp+offset, sizeof(regout[0].link));
+              offset += sizeof(regout[i].link);
+              writereg(regout[i]);
+            }
+          }
+        }
+        else{
+          printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
+          return 0;
+        }
+      }
+      if(empty)
+        printf("File is empty.\n");
+      fclose(fp);
+      return 1;
+    }
 }
 
 int removereg(char* key, char* filepath){
@@ -200,6 +246,30 @@ void readreg(reg* regout){
     printf("The chosen register key is: %s\n", buffer);
 }
 
+void writereg(reg regout){
+  // Writes the contents of a register as formatted strings to stdout
+  // Format: [ K:<key> | T:<title> | A:<author> | L: <link> ]
+  char buffer[64];
+  unsigned int i;
+  memset(buffer, 0, sizeof(buffer));
+  strncpy(buffer, regout.key, sizeof(regout.key));
+  printf("[ K: ");
+  for (i = 0; i < strlen(buffer); i++) putchar(buffer[i]);
+  memset(buffer, 0, sizeof(buffer));
+  strncpy(buffer, regout.title, sizeof(regout.title));
+  printf(" | T: ");
+  for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+  memset(buffer, 0, sizeof(buffer));
+  strncpy(buffer, regout.author, sizeof(regout.author));
+  printf(" | A: ");
+  for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+  memset(buffer, 0, sizeof(buffer));
+  strncpy(buffer, regout.link, sizeof(regout.link));
+  printf(" | T: ");
+  for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+  printf(" ]\n");
+}
+
 block* newblock(){
     block* tmp = (block*)malloc(sizeof(block));
     memset(tmp,0,BLKSIZE);
@@ -209,7 +279,6 @@ block* newblock(){
 
 int createfile(char* filepath){
     FILE* fp = fopen(filepath, "wb");
-
     if(!fp)
         return 0;
     else{
@@ -218,7 +287,6 @@ int createfile(char* filepath){
         free(blk);
         fclose(fp);
     }
-
     return 1;
 }
 
