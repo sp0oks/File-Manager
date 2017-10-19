@@ -12,7 +12,6 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
 
     if(!fp)
         return 0;
-
     else{
         while(fread(block_temp, BLKSIZE, 1, fp)){
           // Checks if search term matches any register in the block and if it is valid (not removed)
@@ -27,51 +26,50 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
                 // Clear comparing buffer and copy character array into it to test against the search string
                 // Testing key field
                 memset(buffer, 0, sizeof(buffer));
-                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->key));
+                memcpy(buffer, reg_temp+OFFREG, KEYSIZE);
                 found = (!strncmp(buffer, searchstr, strlen(searchstr))) ? 1 : 0;
-                OFFREG += sizeof(regout->key);
+                OFFREG += KEYSIZE;
                 // Testing title field
                 memset(buffer, 0, sizeof(buffer));
-                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->title));
+                memcpy(buffer, reg_temp+OFFREG, TITLESIZE);
                 found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
-                OFFREG += sizeof(regout->title);
+                OFFREG += TITLESIZE;
                 // Testing author field
                 memset(buffer, 0, sizeof(buffer));
-                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->author));
+                memcpy(buffer, reg_temp+OFFREG, AUTHORSIZE);
                 found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
-                OFFREG += sizeof(regout->author);
+                OFFREG += AUTHORSIZE;
                 // Testing link field
                 memset(buffer, 0, sizeof(buffer));
-                memcpy(buffer, reg_temp+OFFREG, sizeof(regout->link));
-                found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
+                memcpy(buffer, reg_temp+OFFREG, LINKSIZE);
+                found = (found == 1) ? 1 : teststr(buffer,searchstr,".");
               }
               // If not found, move to next register
               OFFBLK += REGSIZE;
-            }
-            if(found){
-              // If search match is successful, copy register to output
-              int OFFREG = 0;
-              memcpy(regout->key, reg_temp+OFFREG, sizeof(regout->key));
-              OFFREG += sizeof(regout->key);
-              memcpy(regout->title, reg_temp+OFFREG, sizeof(regout->title));
-              OFFREG += sizeof(regout->title);
-              memcpy(regout->author, reg_temp+OFFREG, sizeof(regout->author));
-              OFFREG += sizeof(regout->author);
-              memcpy(regout->link, reg_temp+OFFREG, sizeof(regout->link));
+              if(found){
+                // If search match is successful, copy register to output
+                int OFFREG = 0;
+                memcpy(regout->key, reg_temp+OFFREG, KEYSIZE);
+                OFFREG += KEYSIZE;
+                memcpy(regout->title, reg_temp+OFFREG, TITLESIZE);
+                OFFREG += TITLESIZE;
+                memcpy(regout->author, reg_temp+OFFREG, AUTHORSIZE);
+                OFFREG += AUTHORSIZE;
+                memcpy(regout->link, reg_temp+OFFREG, LINKSIZE);
 
-              fclose(fp);
-              return 1;
+                fclose(fp);
+                return 1;
+              }
             }
             // If still not found, read next block
           }
           else{
               printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
-              fclose(fp);
-              return 0;
           }
         }
+        fclose(fp);
+        return 0;
     }
-    return 0;
 }
 
 int teststr(char* source, char* searchstr, const char* delim){
@@ -105,14 +103,14 @@ int insertreg(reg regin, char* filepath){
               offset += REGSIZE;
 
             if(offset <= (BLKSIZE-REGSIZE)){
-              strncpy(block_temp+offset, regin.key, sizeof(regin.key));
-              offset += sizeof(regin.key);
-              strncpy(block_temp+offset, regin.title, sizeof(regin.title));
-              offset += sizeof(regin.title);
-              strncpy(block_temp+offset, regin.author, sizeof(regin.author));
-              offset += sizeof(regin.author);
-              strncpy(block_temp+offset, regin.link, sizeof(regin.link));
-              offset += sizeof(regin.link);
+              strncpy(block_temp+offset, regin.key, KEYSIZE);
+              offset += KEYSIZE;
+              strncpy(block_temp+offset, regin.title, TITLESIZE);
+              offset += TITLESIZE;
+              strncpy(block_temp+offset, regin.author, AUTHORSIZE);
+              offset += AUTHORSIZE;
+              strncpy(block_temp+offset, regin.link, LINKSIZE);
+              offset += LINKSIZE;
 
               fseek(fp, BLKCOUNT*BLKSIZE, SEEK_SET);
               fwrite(block_temp, BLKSIZE, 1, fp);
@@ -131,10 +129,10 @@ int insertreg(reg regin, char* filepath){
       if(!iterator){
         block* new_blk = newblock();
         // Since it's a new block, copy the input register to the first position
-        strncpy(new_blk->reg_index[0].key, regin.key, sizeof(regin.key));
-        strncpy(new_blk->reg_index[0].title, regin.title, sizeof(regin.title));
-        strncpy(new_blk->reg_index[0].author, regin.author, sizeof(regin.author));
-        strncpy(new_blk->reg_index[0].link, regin.link, sizeof(regin.link));
+        strncpy(new_blk->reg_index[0].key, regin.key, KEYSIZE);
+        strncpy(new_blk->reg_index[0].title, regin.title, TITLESIZE);
+        strncpy(new_blk->reg_index[0].author, regin.author, AUTHORSIZE);
+        strncpy(new_blk->reg_index[0].link, regin.link, LINKSIZE);
         // Position pointer and write data to file
         fseek(fp, BLKCOUNT*BLKSIZE, SEEK_SET);
         fwrite(new_blk, BLKSIZE, 1, fp);
@@ -164,14 +162,14 @@ int listreg(char* filepath){
           for(i = 0; i < BLKSIZE/REGSIZE; i++){
             if(strncmp(block_temp+offset, "\x7F", 1) && strncmp(block_temp+offset, "\0", 1)){
               empty = 0;
-              strncpy(regout[i].key, block_temp+offset, sizeof(regout[0].key));
-              offset += sizeof(regout[i].key);
-              strncpy(regout[i].title, block_temp+offset, sizeof(regout[0].title));
-              offset += sizeof(regout[i].title);
-              strncpy(regout[i].author, block_temp+offset, sizeof(regout[0].author));
-              offset += sizeof(regout[i].author);
-              strncpy(regout[i].link, block_temp+offset, sizeof(regout[0].link));
-              offset += sizeof(regout[i].link);
+              strncpy(regout[i].key, block_temp+offset, KEYSIZE);
+              offset += KEYSIZE;
+              strncpy(regout[i].title, block_temp+offset, TITLESIZE);
+              offset += TITLESIZE;
+              strncpy(regout[i].author, block_temp+offset, AUTHORSIZE);
+              offset += AUTHORSIZE;
+              strncpy(regout[i].link, block_temp+offset, LINKSIZE);
+              offset += LINKSIZE;
               writereg(regout[i]);
             }
           }
@@ -188,9 +186,75 @@ int listreg(char* filepath){
     }
 }
 
-int removereg(char* key, char* filepath){
-    return 1;
+int removereg(char* searchstr, char* filepath){
+  FILE* fp = fopen(filepath, "r+b");
+  char block_temp[BLKSIZE]; // Buffer to store raw blocks
+  char reg_temp[REGSIZE]; // Buffer to store raw registers
+  char buffer[128]; // Buffer to format character arrays into strings
+  int BLKCOUNT = 0;
+
+  if(!fp)
+      return 0;
+  else{
+      while(fread(block_temp, BLKSIZE, 1, fp)){
+      // Checks if search term matches any register in the block and if it is valid (not removed)
+        if (!strncmp(block_temp, "#!", 2)){
+          int OFFBLK = 2; // Offset variable to jump between registers
+          int found = 0;
+          while (OFFBLK < BLKSIZE && !found){
+            if (strncmp(block_temp+OFFBLK,"\x7F",1) && strncmp(block_temp+OFFBLK,"\0", 1)){
+              int OFFREG = 0; // Offset variable to jump between register fields
+              // Copy REGSIZE number of bits from temporary block buffer to temporary register buffer
+              memcpy(reg_temp, block_temp+OFFBLK, REGSIZE);
+              // Clear comparing buffer and copy character array into it to test against the search string
+              // Testing key field
+              memset(buffer, 0, sizeof(buffer));
+              memcpy(buffer, reg_temp+OFFREG, KEYSIZE);
+              found = (!strncmp(buffer, searchstr, strlen(searchstr))) ? 1 : 0;
+              OFFREG += KEYSIZE;
+              // Testing title field
+              memset(buffer, 0, sizeof(buffer));
+              memcpy(buffer, reg_temp+OFFREG, TITLESIZE);
+              found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
+              OFFREG += TITLESIZE;
+              // Testing author field
+              memset(buffer, 0, sizeof(buffer));
+              memcpy(buffer, reg_temp+OFFREG, AUTHORSIZE);
+              found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
+              OFFREG += AUTHORSIZE;
+              // Testing link field
+              memset(buffer, 0, sizeof(buffer));
+              memcpy(buffer, reg_temp+OFFREG, LINKSIZE);
+              found = (found == 1) ? 1 : teststr(buffer,searchstr,".");
+            }
+            if(found){
+              /* If search match is successful, change register key to \x7F (Mark as invalid)
+                and write to block */
+              memset(buffer, 0, sizeof(buffer));
+              memcpy(buffer, reg_temp, KEYSIZE);
+              memcpy(reg_temp, "\x7F\0\0\0", KEYSIZE);
+
+              fseek(fp, BLKCOUNT*BLKSIZE + OFFBLK, SEEK_SET);
+              fwrite(reg_temp, REGSIZE, 1, fp);
+
+              fclose(fp);
+              return 1;
+            }
+            // If not found, move to next register
+            OFFBLK += REGSIZE;
+          }
+        // If still not found, read next block
+        BLKCOUNT++;
+        }
+        else{
+          printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
+        }
+      }
+      fclose(fp);
+      return 0;
+    }
 }
+
 
 void readreg(reg* regout){
     char title_ini[3], author_ini[2], buffer[64];
@@ -198,7 +262,7 @@ void readreg(reg* regout){
 
     printf("Enter the name of the book's Title:\n");
     fgets(buffer, sizeof(buffer), stdin);
-    strncpy(regout->title, buffer, sizeof(regout->title));
+    strncpy(regout->title, buffer, TITLESIZE);
     letcount = 0;
     for(i = 0; i < strlen(buffer); i++){
       if ((isupper(buffer[i])) && (letcount < sizeof(title_ini))){
@@ -211,7 +275,7 @@ void readreg(reg* regout){
 
     printf("Enter the name of the book's Author:\n");
     fgets(buffer, sizeof(buffer), stdin);
-    strncpy(regout->author, buffer, sizeof(regout->author));
+    strncpy(regout->author, buffer, AUTHORSIZE);
     letcount = 0;
     for(i = 0; i < strlen(buffer); i++){
       if ((isupper(buffer[i])) && (letcount < sizeof(author_ini))){
@@ -229,7 +293,7 @@ void readreg(reg* regout){
       printf("Please shorten the link and retry:\n");
       fgets(buffer, sizeof(buffer), stdin);
     }
-    strncpy(regout->link, buffer, sizeof(regout->link));
+    strncpy(regout->link, buffer, LINKSIZE);
 
     /* Register key is a composition of 2 letters from the author's name and
      * 3 letters from the title's name (preferably the initials).
@@ -237,12 +301,12 @@ void readreg(reg* regout){
      */
     strncpy(regout->key, author_ini, 2);
     strncpy(regout->key+2, title_ini, 3);
-    for(i = 0; i < sizeof(regout->key); i++){
+    for(i = 0; i < KEYSIZE; i++){
       if(isspace(regout->key[i]))
         regout->key[i] = '-';
     }
     memset(buffer,0,sizeof(buffer));
-    strncpy(buffer, regout->key, sizeof(regout->key));
+    strncpy(buffer, regout->key, KEYSIZE);
     printf("The chosen register key is: %s\n", buffer);
 }
 
@@ -252,19 +316,19 @@ void writereg(reg regout){
   char buffer[64];
   unsigned int i;
   memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.key, sizeof(regout.key));
+  strncpy(buffer, regout.key, KEYSIZE);
   printf("[ K: ");
   for (i = 0; i < strlen(buffer); i++) putchar(buffer[i]);
   memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.title, sizeof(regout.title));
+  strncpy(buffer, regout.title, TITLESIZE);
   printf(" | T: ");
   for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
   memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.author, sizeof(regout.author));
+  strncpy(buffer, regout.author, AUTHORSIZE);
   printf(" | A: ");
   for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
   memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.link, sizeof(regout.link));
+  strncpy(buffer, regout.link, LINKSIZE);
   printf(" | T: ");
   for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
   printf(" ]\n");

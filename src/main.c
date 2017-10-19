@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "register.h"
 
 void printhelp();
@@ -59,8 +58,15 @@ int main(int argc, char* argv[]){
     }
 
     // 3. Remove register
-    if(flags[2] == 1)
-        removereg(rarg, filepath);
+    if(flags[2] == 1){
+        if(removereg(rarg, filepath)){
+          printf("Register with term '%s' found and removed on \"%s\".\n", rarg, filepath);
+        }
+        else{
+          printf("Failed to remove register from \"%s\".\n", filepath);
+          return 1;
+        }
+    }
 
     // 4. Insert registers
     if(flags[3] == 1){
@@ -79,8 +85,7 @@ int main(int argc, char* argv[]){
             scanf("%d", &regnum);
             reg regin[regnum];
             memset(regin, 'F', sizeof(regin));
-            for(index = 0; index < regnum; index++)
-              error = insertreg(regin[index], filepath);
+            for(index = 0; index < regnum; index++) error = insertreg(regin[index], filepath);
           }
           else{
             printf("Operation cancelled.\n");
@@ -107,10 +112,6 @@ int main(int argc, char* argv[]){
     // 6. List registers
     if(flags[5] == 1)
         listreg(filepath);
-
-    // Free all the argument strings that were allocated
-    // if(filepath)
-    //   free(filepath);
 
     return 0;
 }
@@ -144,8 +145,6 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
             case 'r':
                 flags[2] = 1;
                 *rarg = optarg;
-                /**rarg = (char*)malloc(strlen(optarg));
-                strcpy(*rarg, optarg);*/
                 break;
             case 'i':
                 flags[3] = 1;

@@ -6,6 +6,11 @@
 
 #define REGSIZE 85
 #define BLKSIZE 512
+#define KEYSIZE 5
+#define TITLESIZE 30
+#define AUTHORSIZE 20
+#define LINKSIZE 30
+
 /* Register for a file manager of book download links
  * Total number of bytes: 84 bytes
  * Defines the format of the register
