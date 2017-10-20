@@ -1,8 +1,6 @@
 #include "register.h"
 
-/*
- * Invalid register will have a starting byte 7F (ASCII Del), the relative address of the next invalid register (in register units, not bytes);
- */
+/*  Invalid register will have a starting byte '7F' (ASCII DEL) */
 
 int searchreg(reg* regout, char* searchstr, char* filepath){
     FILE* fp = fopen(filepath, "rb");
@@ -15,11 +13,11 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
     else{
         while(fread(block_temp, BLKSIZE, 1, fp)){
           // Checks if search term matches any register in the block and if it is valid (not removed)
-          if (!strncmp(block_temp, "#!", 2)){
+          if (block_temp[0] == '#' && block_temp[1] == '!'){
             int OFFBLK = 2; // Offset variable to jump between registers
             int found = 0;
             while (OFFBLK < BLKSIZE && !found){
-              if (strncmp(block_temp+OFFBLK,"\x7F",1) && strncmp(block_temp+OFFBLK,"\0", 1)){
+              if (!(block_temp[OFFBLK] == '\x7F') && !(block_temp[OFFBLK] == 0)){
                 int OFFREG = 0; // Offset variable to jump between register fields
                 // Copy REGSIZE number of bits from temporary block buffer to temporary register buffer
                 memcpy(reg_temp, block_temp+OFFBLK, REGSIZE);
@@ -73,13 +71,13 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
 }
 
 int teststr(char* source, char* searchstr, const char* delim){
-  char* token; // Variable to store string tokens that will be used for testing against search string
-  token = strtok(source, delim);
-  while(token != NULL){
-    if(!strncmp(token, searchstr, strlen(searchstr))) return 1;
-    token = strtok(NULL, delim);
-  }
-    return 0;
+    char* token; // Variable to store string tokens that will be used for testing against search string
+    token = strtok(source, delim);
+    while(token != NULL){
+      if(!strncmp(token, searchstr, strlen(searchstr))) return 1;
+      token = strtok(NULL, delim);
+    }
+      return 0;
 }
 
 int insertreg(reg regin, char* filepath){
@@ -94,12 +92,12 @@ int insertreg(reg regin, char* filepath){
     else{
       // Checks if there are available slots in the existing blocks
       while((iterator = fread(block_temp, BLKSIZE, 1, fp)) != 0){
-        if(!strncmp(block_temp, "#!", 2)){
+        if (block_temp[0] == '#' && block_temp[1] == '!'){
             // Starting block offset to reach the register index
             offset = 2;
 
             // Checks if there are available slots in the block's index
-            while(strncmp(block_temp+offset, "\x7F", 1) && strncmp(block_temp+offset, "\0", 1) && offset <= (BLKSIZE - REGSIZE))
+            while(!(block_temp[offset] == '\x7F') && !(block_temp[offset] == 0) && offset <= (BLKSIZE - REGSIZE))
               offset += REGSIZE;
 
             if(offset <= (BLKSIZE-REGSIZE)){
@@ -156,11 +154,12 @@ int listreg(char* filepath){
       return 0;
     else{
       while((fread(block_temp, BLKSIZE, 1, fp)) != 0){
-        if(!strncmp(block_temp, "#!", 2)){
+        if (block_temp[0] == '#' && block_temp[1] == '!'){
           int i;
-          int offset = 2;
+          int offset;
           for(i = 0; i < BLKSIZE/REGSIZE; i++){
-            if(strncmp(block_temp+offset, "\x7F", 1) && strncmp(block_temp+offset, "\0", 1)){
+            offset = 2 + (REGSIZE*i);
+            if(!(block_temp[offset] == '\x7F') && !(block_temp[offset] == 0)){
               empty = 0;
               strncpy(regout[i].key, block_temp+offset, KEYSIZE);
               offset += KEYSIZE;
@@ -187,74 +186,73 @@ int listreg(char* filepath){
 }
 
 int removereg(char* searchstr, char* filepath){
-  FILE* fp = fopen(filepath, "r+b");
-  char block_temp[BLKSIZE]; // Buffer to store raw blocks
-  char reg_temp[REGSIZE]; // Buffer to store raw registers
-  char buffer[128]; // Buffer to format character arrays into strings
-  int BLKCOUNT = 0;
+    FILE* fp = fopen(filepath, "r+b");
+    char block_temp[BLKSIZE]; // Buffer to store raw blocks
+    char reg_temp[REGSIZE]; // Buffer to store raw registers
+    char buffer[128]; // Buffer to format character arrays into strings
+    int BLKCOUNT = 0;
 
-  if(!fp)
-      return 0;
-  else{
-      while(fread(block_temp, BLKSIZE, 1, fp)){
-      // Checks if search term matches any register in the block and if it is valid (not removed)
-        if (!strncmp(block_temp, "#!", 2)){
-          int OFFBLK = 2; // Offset variable to jump between registers
-          int found = 0;
-          while (OFFBLK < BLKSIZE && !found){
-            if (strncmp(block_temp+OFFBLK,"\x7F",1) && strncmp(block_temp+OFFBLK,"\0", 1)){
-              int OFFREG = 0; // Offset variable to jump between register fields
-              // Copy REGSIZE number of bits from temporary block buffer to temporary register buffer
-              memcpy(reg_temp, block_temp+OFFBLK, REGSIZE);
-              // Clear comparing buffer and copy character array into it to test against the search string
-              // Testing key field
-              memset(buffer, 0, sizeof(buffer));
-              memcpy(buffer, reg_temp+OFFREG, KEYSIZE);
-              found = (!strncmp(buffer, searchstr, strlen(searchstr))) ? 1 : 0;
-              OFFREG += KEYSIZE;
-              // Testing title field
-              memset(buffer, 0, sizeof(buffer));
-              memcpy(buffer, reg_temp+OFFREG, TITLESIZE);
-              found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
-              OFFREG += TITLESIZE;
-              // Testing author field
-              memset(buffer, 0, sizeof(buffer));
-              memcpy(buffer, reg_temp+OFFREG, AUTHORSIZE);
-              found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
-              OFFREG += AUTHORSIZE;
-              // Testing link field
-              memset(buffer, 0, sizeof(buffer));
-              memcpy(buffer, reg_temp+OFFREG, LINKSIZE);
-              found = (found == 1) ? 1 : teststr(buffer,searchstr,".");
+    if(!fp)
+        return 0;
+    else{
+        while(fread(block_temp, BLKSIZE, 1, fp)){
+        // Checks if search term matches any register in the block and if it is valid (not removed)
+          if (block_temp[0] == '#' && block_temp[1] == '!'){
+            int OFFBLK = 2; // Offset variable to jump between registers
+            int found = 0;
+            while (OFFBLK < BLKSIZE && !found){
+              if (!(block_temp[OFFBLK] == '\x7F') && !(block_temp[OFFBLK] == 0)){
+                int OFFREG = 0; // Offset variable to jump between register fields
+                // Copy REGSIZE number of bits from temporary block buffer to temporary register buffer
+                memcpy(reg_temp, block_temp+OFFBLK, REGSIZE);
+                // Clear comparing buffer and copy character array into it to test against the search string
+                // Testing key field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, KEYSIZE);
+                found = (!strncmp(buffer, searchstr, strlen(searchstr))) ? 1 : 0;
+                OFFREG += KEYSIZE;
+                // Testing title field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, TITLESIZE);
+                found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
+                OFFREG += TITLESIZE;
+                // Testing author field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, AUTHORSIZE);
+                found = (found == 1) ? 1 : teststr(buffer,searchstr," ");
+                OFFREG += AUTHORSIZE;
+                // Testing link field
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp+OFFREG, LINKSIZE);
+                found = (found == 1) ? 1 : teststr(buffer,searchstr,".");
+              }
+              if(found){
+                /* If search match is successful, change register key to '\x7F' (Mark as invalid)
+                  and write to block */
+                memset(buffer, 0, sizeof(buffer));
+                memcpy(buffer, reg_temp, REGSIZE);
+                buffer[0] = '\x7F';
+
+                fseek(fp, BLKCOUNT*BLKSIZE + OFFBLK, SEEK_SET);
+                fwrite(buffer, REGSIZE, 1, fp);
+
+                fclose(fp);
+                return 1;
+              }
+              // If not found, move to next register
+              OFFBLK += REGSIZE;
             }
-            if(found){
-              /* If search match is successful, change register key to \x7F (Mark as invalid)
-                and write to block */
-              memset(buffer, 0, sizeof(buffer));
-              memcpy(buffer, reg_temp, KEYSIZE);
-              memcpy(reg_temp, "\x7F\0\0\0", KEYSIZE);
-
-              fseek(fp, BLKCOUNT*BLKSIZE + OFFBLK, SEEK_SET);
-              fwrite(reg_temp, REGSIZE, 1, fp);
-
-              fclose(fp);
-              return 1;
-            }
-            // If not found, move to next register
-            OFFBLK += REGSIZE;
+          // If still not found, read next block
+          BLKCOUNT++;
           }
-        // If still not found, read next block
-        BLKCOUNT++;
+          else{
+            printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
+          }
         }
-        else{
-          printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
-        }
-      }
-      fclose(fp);
-      return 0;
+        fclose(fp);
+        return 0;
     }
 }
-
 
 void readreg(reg* regout){
     char title_ini[3], author_ini[2], buffer[64];
@@ -297,8 +295,7 @@ void readreg(reg* regout){
 
     /* Register key is a composition of 2 letters from the author's name and
      * 3 letters from the title's name (preferably the initials).
-     * If there is a whitespace in the key, it is swapped to '-'.
-     */
+     * If there is a whitespace in the key, it is swapped to '-'. */
     strncpy(regout->key, author_ini, 2);
     strncpy(regout->key+2, title_ini, 3);
     for(i = 0; i < KEYSIZE; i++){
@@ -311,27 +308,27 @@ void readreg(reg* regout){
 }
 
 void writereg(reg regout){
-  // Writes the contents of a register as formatted strings to stdout
-  // Format: [ K:<key> | T:<title> | A:<author> | L: <link> ]
-  char buffer[64];
-  unsigned int i;
-  memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.key, KEYSIZE);
-  printf("[ K: ");
-  for (i = 0; i < strlen(buffer); i++) putchar(buffer[i]);
-  memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.title, TITLESIZE);
-  printf(" | T: ");
-  for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
-  memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.author, AUTHORSIZE);
-  printf(" | A: ");
-  for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
-  memset(buffer, 0, sizeof(buffer));
-  strncpy(buffer, regout.link, LINKSIZE);
-  printf(" | T: ");
-  for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
-  printf(" ]\n");
+    // Writes the contents of a register as formatted strings to stdout
+    // Format: [ K:<key> | T:<title> | A:<author> | L: <link> ]
+    char buffer[64];
+    unsigned int i;
+    memset(buffer, 0, sizeof(buffer));
+    strncpy(buffer, regout.key, KEYSIZE);
+    printf("[ K: ");
+    for (i = 0; i < strlen(buffer); i++) putchar(buffer[i]);
+    memset(buffer, 0, sizeof(buffer));
+    strncpy(buffer, regout.title, TITLESIZE);
+    printf(" | T: ");
+    for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+    memset(buffer, 0, sizeof(buffer));
+    strncpy(buffer, regout.author, AUTHORSIZE);
+    printf(" | A: ");
+    for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+    memset(buffer, 0, sizeof(buffer));
+    strncpy(buffer, regout.link, LINKSIZE);
+    printf(" | T: ");
+    for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+    printf(" ]\n");
 }
 
 block* newblock(){
@@ -355,5 +352,52 @@ int createfile(char* filepath){
 }
 
 int compactfile(char* filepath){
-    return 1;
+    /* The compact function will remove all invalid registers by rewriting
+       the file without the invalid registers and empty blocks */
+    FILE* fp = fopen(filepath, "rb");
+    FILE* fp_tmp = fopen("data.tmp", "wb");
+    block *blk = newblock(), *tmp_blk = newblock();
+    int i, regcount = 0, BLKCOUNT;
+
+    if(!fp)
+      return 0;
+    else if(!fp_tmp)
+      return 0;
+    else{
+      BLKCOUNT = 0;
+      // Read all the blocks from the original file
+      while(fread(blk, BLKSIZE, 1, fp)){
+        // Iterate through the block's register index
+        for(i = 0; i < BLKSIZE/REGSIZE; i++){
+          // If a valid register is found, store it in the temporary block
+          if(!(blk->reg_index[i].key[0] == '\x7F') && !(blk->reg_index[i].key[0] == 0)){
+            tmp_blk->reg_index[regcount] = blk->reg_index[i];
+            regcount++;
+          }
+          // If temporary block is full, write to the new file and reset it
+          if(regcount == 6){
+            regcount = 0;
+            fseek(fp_tmp, BLKSIZE*BLKCOUNT, SEEK_SET);
+            fwrite(tmp_blk, BLKSIZE, 1, fp_tmp);
+            BLKCOUNT++;
+            free(tmp_blk);
+            tmp_blk = newblock();
+          }
+        }
+      }
+      // Write the remaining registers to the new file
+      if(regcount > 0){
+        fwrite(tmp_blk, BLKSIZE, 1, fp_tmp);
+      }
+
+      free(blk);
+      free(tmp_blk);
+      fclose(fp);
+      fclose(fp_tmp);
+
+      remove(filepath);
+      rename("data.tmp", filepath);
+
+      return 1;
+    }
 }

@@ -84,7 +84,12 @@ int main(int argc, char* argv[]){
             printf("Choose number of dummy registers to add:\n");
             scanf("%d", &regnum);
             reg regin[regnum];
-            memset(regin, 'F', sizeof(regin));
+            memset(&regin, 0, sizeof(regin));
+            char ind = 'A';
+            for(index = 0; index < regnum; index++){
+              memset(&regin[index], ind, sizeof(regin[index])-1);
+              ind = (ind > 90) ? 'A' : ind+1;
+            }
             for(index = 0; index < regnum; index++) error = insertreg(regin[index], filepath);
           }
           else{
@@ -106,8 +111,12 @@ int main(int argc, char* argv[]){
     }
 
     // 5. Compact file
-    if(flags[4] == 1)
-        compactfile(filepath);
+    if(flags[4] == 1){
+        if(compactfile(filepath))
+          printf("File \"%s\" compacted successfully.\n", filepath);
+        else
+          printf("Failed to compact file \"%s\".\n", filepath);
+    }
 
     // 6. List registers
     if(flags[5] == 1)
@@ -163,8 +172,6 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
     // Only reads the first value from argv
     if(optind < argc){
         *filepath = argv[optind];
-        // *filepath = (char*)malloc(strlen(argv[optind]));
-        // strcpy(*filepath, argv[optind]);
     }else{
         printhelp();
         printf("Invalid option: archiver takes exactly one filepath as parameter\n");
