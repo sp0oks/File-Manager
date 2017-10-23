@@ -1,3 +1,10 @@
+/*
+ * This is the file for the general includes, constant defines and function definitions of Archiver.
+ *
+ * Written by Gabriel Alves <https://github.com/CptSpookz> and Matheus Bortoleto <https://github.com/explodingnuggets>.
+ * São Carlos - SP, 2017
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

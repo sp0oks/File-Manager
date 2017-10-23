@@ -1,3 +1,9 @@
+/*
+ * This is the file for the general file-processing, block and register function implementations of Archiver.
+ *
+ * Written by Gabriel Alves <https://github.com/CptSpookz> and Matheus Bortoleto <https://github.com/explodingnuggets>
+ * São Carlos - SP, 2017
+ */
 #include "register.h"
 
 /*  Invalid register will have a starting byte '7F' (ASCII DEL) */

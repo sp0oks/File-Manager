@@ -1,3 +1,12 @@
+/* 
+ * Archiver is a simple register manager that keeps track of your book download links, along with their titles and author names.
+ * It's usage is shown by running ./archiver -h.
+ *
+ * This is the file for the general user interface function implementations. 
+ *
+ * Written by Gabriel Alves <https://github.com/CptSpookz> and Matheus Bortoleto <https://github.com/explodingnuggets>.
+ * São Carlos-SP, 2017
+ */
 #include "register.h"
 
 void printhelp();
@@ -13,14 +22,14 @@ int main(int argc, char* argv[]){
 
     int index;
     /*
-     Checks if there's a file path argument
-     If file path argument is missing, print the usage and exit with 1
-
-     Options order:
-     n > s > r > i > c > l
-
-     So, if all the options are selected, the program will first create the file, then search it, remove the register, insert new registers, compact the file and finally list current registers in the file.
-    */
+     *	Checks if there's a file path argument
+     *	If file path argument is missing, print the usage and exit with 1
+     *	Options order:
+     *	n > s > r > i > c > l
+     *	If all options are selected, the program will first create the file, then search it, remove the register, insert new registers, compact the file and finally
+     *	list current registers in the file.
+     */
+    
     if(argc < 2){
         printhelp();
         return 1;
@@ -128,6 +137,7 @@ int main(int argc, char* argv[]){
 void printhelp(){
     printf("Usage: archiver [options] <file_path>\n");
     printf("Options:\n");
+    printf("\t-h\t\t\tShows usage options\n");
     printf("\t-n\t\t\tCreates a new file\n");
     printf("\t-i <reg_number>\t\tInserts <reg_number> registers into file\n");
     printf("\t-i 0\t\t\tInserts dummy registers into file\n");
@@ -139,10 +149,11 @@ void printhelp(){
 
 int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath, int argc, char** argv){
     int opt;
+    int helped = 0;
 
     // Reads all the options from command line
     // The options set flags to 1, and if an argument is needed, it's passed to a char pointers
-    while((opt = getopt(argc, argv, "nclr:s:i:")) != -1){
+    while((opt = getopt(argc, argv, "hnclr:s:i:")) != -1){
         switch(opt){
             case 'n':
                 flags[0] = 1;
@@ -165,6 +176,10 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
             case 'l':
                 flags[5] = 1;
                 break;
+	    case 'h':
+		printhelp();
+		helped = 1;
+		break;
         }
     }
 
@@ -173,8 +188,9 @@ int readflags(int* flags, char** sarg, char** rarg, char** iarg, char** filepath
     if(optind < argc){
         *filepath = argv[optind];
     }else{
-        printhelp();
-        printf("Invalid option: archiver takes exactly one filepath as parameter\n");
+	if(!helped)
+	        printhelp();
+        printf("Invalid option: Archiver takes exactly one filepath as parameter\n");
         return 0;
     }
 
