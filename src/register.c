@@ -18,7 +18,7 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
         return 0;
     else{
         while(fread(block_temp, BLKSIZE, 1, fp)){
-          // Checks if search term matches any register in the block and if it is valid (not removed)
+          // Checks if search term matches a field or part of the field in any valid(not removed) register in the block
           if (block_temp[0] == '#' && block_temp[1] == '!'){
             int OFFBLK = 2; // Offset variable to jump between registers
             int found = 0;
@@ -76,11 +76,14 @@ int searchreg(reg* regout, char* searchstr, char* filepath){
     }
 }
 
+// Tests if a searched term matches any of the parts(tokens) of a register field value
 int teststr(char* source, char* searchstr, const char* delim){
     char* token; // Variable to store string tokens that will be used for testing against search string
     token = strtok(source, delim);
+    // While there are tokens in the string
     while(token != NULL){
       if(!strncmp(token, searchstr, strlen(searchstr))) return 1;
+      // If token is not the same as the search string, get the next token
       token = strtok(NULL, delim);
     }
       return 0;
@@ -105,7 +108,7 @@ int insertreg(reg regin, char* filepath){
             // Checks if there are available slots in the block's index
             while(!(block_temp[offset] == '\x7F') && !(block_temp[offset] == 0) && offset <= (BLKSIZE - REGSIZE))
               offset += REGSIZE;
-
+	    // If there's an available slot and it is still inside the block's limits
             if(offset <= (BLKSIZE-REGSIZE)){
               strncpy(block_temp+offset, regin.key, KEYSIZE);
               offset += KEYSIZE;
@@ -122,10 +125,12 @@ int insertreg(reg regin, char* filepath){
               fclose(fp);
               return 1;
             }
+	    // Move to the next block if unsuccessful
             BLKCOUNT++;
         }
-        else{
-          printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
+	// If the beginning of the block does not contain "#!", something is wrong
+	else{
+	  printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
           return 0;
         }
       }
@@ -163,9 +168,12 @@ int listreg(char* filepath){
         if (block_temp[0] == '#' && block_temp[1] == '!'){
           int i;
           int offset;
+	  // Loop through the whole block since all registers are being collected
           for(i = 0; i < BLKSIZE/REGSIZE; i++){
             offset = 2 + (REGSIZE*i);
+	    // If the register is valid, print it
             if(!(block_temp[offset] == '\x7F') && !(block_temp[offset] == 0)){
+	      // Found a register, turn off the empty file signal
               empty = 0;
               strncpy(regout[i].key, block_temp+offset, KEYSIZE);
               offset += KEYSIZE;
@@ -179,11 +187,13 @@ int listreg(char* filepath){
             }
           }
         }
+	// If the beginning of the block does not contain "#!", something is wrong
         else{
           printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
           return 0;
         }
       }
+      // If no registers were found, file is empty
       if(empty)
         printf("File is empty.\n");
       fclose(fp);
@@ -251,6 +261,7 @@ int removereg(char* searchstr, char* filepath){
           // If still not found, read next block
           BLKCOUNT++;
           }
+	  // If the beginning of the block does not contain "#!", something is wrong
           else{
             printf("Block consistence bit unconfirmed, file might have been corrupted.\n");
           }
@@ -261,6 +272,7 @@ int removereg(char* searchstr, char* filepath){
 }
 
 void readreg(reg* regout){
+    // Read user content from input to insert a new register
     char title_ini[3], author_ini[2], buffer[64];
     unsigned int i, letcount;
 
@@ -338,6 +350,7 @@ void writereg(reg regout){
 }
 
 block* newblock(){
+    // Generate an empty block with the correct header bytes "#!"
     block* tmp = (block*)malloc(sizeof(block));
     memset(tmp,0,BLKSIZE);
     strncpy(tmp->header, "#!", 2);
@@ -345,6 +358,7 @@ block* newblock(){
 }
 
 int createfile(char* filepath){
+    // Generate a new file containing one empty block
     FILE* fp = fopen(filepath, "wb");
     if(!fp)
         return 0;
