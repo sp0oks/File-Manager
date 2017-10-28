@@ -141,7 +141,7 @@ void printhelp(){
     printf("\t-n\t\t\tCreates a new file\n");
     printf("\t-i <reg_number>\t\tInserts <reg_number> registers into file\n");
     printf("\t-i 0\t\t\tInserts dummy registers into file\n");
-    printf("\t-s <term>\t\tSearches for <term> in all registers in file\n");
+    printf("\t-s <term>\t\tSearches for <term> in all registers from file\n");
     printf("\t-r <reg_key>\t\tRemoves register from file\n");
     printf("\t-c\t\t\tCompact file\n");
     printf("\t-l\t\t\tList all registers in file\n");

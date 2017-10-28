@@ -164,8 +164,10 @@ int listreg(char* filepath){
     if(!fp)
       return 0;
     else{
+      //Read the entire file
       while((fread(block_temp, BLKSIZE, 1, fp)) != 0){
-        if (block_temp[0] == '#' && block_temp[1] == '!'){
+	//Ensure block is consistent
+	if (block_temp[0] == '#' && block_temp[1] == '!'){
           int i;
           int offset;
 	  // Loop through the whole block since all registers are being collected
@@ -276,39 +278,54 @@ void readreg(reg* regout){
     char title_ini[3], author_ini[2], buffer[64];
     unsigned int i, letcount;
 
+    // Read the book's title from input
     printf("Enter the name of the book's Title:\n");
     fgets(buffer, sizeof(buffer), stdin);
+    // Copy the input buffer to the actual register
     strncpy(regout->title, buffer, TITLESIZE);
+    // Initialize temporary variable used to build the register key
     letcount = 0;
+    // The first part of the key is composed of 3 capital letters from the title (if there aren't 3, the letter after the last capital found is used)
     for(i = 0; i < strlen(buffer); i++){
+      // Read the entire string, stop if already found 3
       if ((isupper(buffer[i])) && (letcount < sizeof(title_ini))){
         strncpy(title_ini+letcount, buffer+i, sizeof(char));
         letcount++;
       }
     }
+    // In case letcount is smaller than the expected size, complete the key with lower case letters
     if (letcount < sizeof(title_ini))
         strncpy(title_ini+letcount, buffer+letcount, sizeof(title_ini) - letcount);
 
+    // Read the book author's name from input
     printf("Enter the name of the book's Author:\n");
     fgets(buffer, sizeof(buffer), stdin);
+    // Copy the input buffer to the actual register
     strncpy(regout->author, buffer, AUTHORSIZE);
+    // Initialize temporary variable used to build the register key
     letcount = 0;
+    // The last part of the key is composed of 2 capital letters from the author's name (if there aren't 2, the letter after the last capital found is used)
     for(i = 0; i < strlen(buffer); i++){
+      // Read the entire string, stop if already found 2
       if ((isupper(buffer[i])) && (letcount < sizeof(author_ini))){
         strncpy(author_ini+letcount, buffer+i, sizeof(char));
         letcount++;
       }
     }
+    // In case letcount is smaller than the expected size, complete the key with lower case letters
     if (letcount < sizeof(author_ini))
         strncpy(author_ini+letcount, buffer+letcount, sizeof(author_ini) - letcount);
 
+    // Read the book's download link from input
     printf("Enter the book's Download Link:\n");
     fgets(buffer, sizeof(buffer), stdin);
+    // Ensure the link will not be truncated (a truncated link is possibly useless)
     while(strlen(buffer) > 30){
       printf("Warning: link size over 30 characters, resulting link will be truncated.\n");
       printf("Please shorten the link and retry:\n");
       fgets(buffer, sizeof(buffer), stdin);
     }
+    // Copy the input buffer to the actual register
     strncpy(regout->link, buffer, LINKSIZE);
 
     /* Register key is a composition of 2 letters from the author's name and
@@ -320,8 +337,10 @@ void readreg(reg* regout){
       if(isspace(regout->key[i]))
         regout->key[i] = '-';
     }
+    // Clean the buffer before writing the key to the register
     memset(buffer,0,sizeof(buffer));
     strncpy(buffer, regout->key, KEYSIZE);
+    // Print register's key
     printf("The chosen register key is: %s\n", buffer);
 }
 
@@ -330,27 +349,35 @@ void writereg(reg regout){
     // Format: [ K:<key> | T:<title> | A:<author> | L: <link> ]
     char buffer[64];
     unsigned int i;
+    // Clean buffer before writing to it
     memset(buffer, 0, sizeof(buffer));
     strncpy(buffer, regout.key, KEYSIZE);
+    // Print key field
     printf("[ K: ");
     for (i = 0; i < strlen(buffer); i++) putchar(buffer[i]);
+    // Clean buffer again
     memset(buffer, 0, sizeof(buffer));
     strncpy(buffer, regout.title, TITLESIZE);
+    // Print title field
     printf(" | T: ");
     for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+    // Clean buffer again
     memset(buffer, 0, sizeof(buffer));
     strncpy(buffer, regout.author, AUTHORSIZE);
+    // Print author field
     printf(" | A: ");
     for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
+    // Clean buffer for the last field
     memset(buffer, 0, sizeof(buffer));
     strncpy(buffer, regout.link, LINKSIZE);
-    printf(" | T: ");
+    // Print download link and finish
+    printf(" | L: ");
     for (i = 0; i < strlen(buffer)-1; i++) putchar(buffer[i]);
     printf(" ]\n");
 }
 
 block* newblock(){
-    // Generate an empty block with the correct header bytes "#!"
+    // Generate an empty block with the correct header bytes ("#!")
     block* tmp = (block*)malloc(sizeof(block));
     memset(tmp,0,BLKSIZE);
     strncpy(tmp->header, "#!", 2);
@@ -367,8 +394,8 @@ int createfile(char* filepath){
         fwrite(blk,BLKSIZE,1,fp);
         free(blk);
         fclose(fp);
+	return 1;
     }
-    return 1;
 }
 
 int compactfile(char* filepath){
@@ -406,16 +433,17 @@ int compactfile(char* filepath){
         }
       }
       // Write the remaining registers to the new file
-      if(regcount > 0){
+      if(regcount > 0)
         fwrite(tmp_blk, BLKSIZE, 1, fp_tmp);
-      }
 
       free(blk);
       free(tmp_blk);
       fclose(fp);
       fclose(fp_tmp);
 
+      // Erase the original file
       remove(filepath);
+      // Rename the compacted file to match the original
       rename("data.tmp", filepath);
 
       return 1;
