@@ -23,13 +23,14 @@
  * Defines the format of the register
  */
 typedef struct{
-    char key[5]; // 5 bytes
-    char title[30]; // 30 bytes
-    char author[20]; // 20 bytes
-    char link[30]; // 30 bytes [better store shortened link]
+    char key[KEYSIZE]; // 5 bytes
+    char title[TITLESIZE]; // 30 bytes
+    char author[AUTHORSIZE]; // 20 bytes
+    char link[LINKSIZE]; // 30 bytes [better store shortened link]
 } reg;
 
-/* Block structure for register control
+/*
+ * Block structure for register control
  * Blocks have fixed 512 bytes size, 2 bytes header + 6 registers array
  * Blocks start with a 0x23 0x21 (ASCII '#!') header for identification
  */
