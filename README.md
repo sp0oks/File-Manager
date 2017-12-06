@@ -49,27 +49,3 @@ A implementação pode ser feita nas seguintes linguagens de programação:
    * C++
    * Java
    * Python
-
-## O que enviar e quando
-
-Deve ser enviado um único arquivo com o código elaborado. Caso seja feita a opção pela codificação em vários arquivos (e.g., main.c, registro.h, arquivo.h etc.), os vários arquivos devem ser enviados dentro de um arquivo zip, rar ou tgz. Formatos de arquivos compactados que não puderem ser abertos pelo professor serão desconsiderados.
-
-Apenas um dos membros do grupo deve enviar o trabalho.
-
-O envio será aceito apenas até a data limite estabelecida. Atrasos serão bloqueados e, portanto, desconsiderados.
-
-## Critérios de avaliação
-
-A avaliação do trabalho se dará mediante análise e execução do código enviado.
-
-A pontuação contemplará:
-
-   * Documentação do programa e do código (até 1,0 ponto)
-   * Uso de boas práticas de codificação, como identificadores significativos, indentação, codificação eficiente etc. (até 1,0 ponto)
-   * Uso correto da manipulação de arquivos, tanto pela codificação quanto pela eficiência (até 2,0 pontos)
-   * Implementação da busca (até 1,0 ponto)
-   * Implementação da inserção e remoção (3,0 pontos)
-   * Implementação da listagem (1,0 ponto)
-   * Implementação da compactação (1,0 ponto)
-
-A aderência à proposta é essencial. Por exemplo, os trabalhos que não fizerem controle de blocos não serão considerados, mesmo que todas as operações estejam corretamente implementadas; e as partes de inserção e remoção serão desconsideradas se não houver gerenciamento dos espaços disponíveis.
