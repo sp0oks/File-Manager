@@ -43,9 +43,4 @@ A operação de **manutenção** corresponde à compactação dos dados do arqui
 
 Uma opção para **inserção "em lote"** pode ser implementada e é bem-vinda. Nesta opção, solicita-se quantos registros devem ser inseridos, chamando-se a operação de inserção sucessivamente com dados aleatórios.
 
-A implementação pode ser feita nas seguintes linguagens de programação:
-
-   * C
-   * C++
-   * Java
-   * Python
+A implementação foi feita em C.
